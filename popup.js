@@ -138,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		// This will either select the matched profile name, or "" (-- Saved Profiles --)
 		profileSelectEl.value = matchedName;
+		profileNameEl.value = matchedName;
 	}
 
 	// --- PROFILES LOGIC ---
@@ -164,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		profileNameEl.value = '';
 		saveProfileBtn.textContent = "Saved!";
-		setTimeout(() => saveProfileBtn.textContent = "Save As", 1500);
+		setTimeout(() => saveProfileBtn.textContent = "Save", 1500);
 	});
 
 	loadProfileBtn.addEventListener('click', () => {
@@ -315,6 +316,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	startBtn.addEventListener('click', async () => {
 		await saveActiveState();
 		updateButtons(true);
+
+		// Capture the exact window where the extension was started
+		const currentWindow = await chrome.windows.getCurrent();
+		await chrome.storage.local.set({ targetWindowId: currentWindow.id });
+
 		chrome.runtime.sendMessage({ action: 'START' });
 	});
 

@@ -176,6 +176,7 @@
 			textarea {
 				height: 90px;
 				resize: vertical;
+				white-space: nowrap;
 			}
 			textarea::placeholder,
 			input[type='text']::placeholder {
@@ -311,16 +312,16 @@
 			<h3>Profiles & Data</h3>
 
 			<div class="row">
-				<input type="text" id="profileName" placeholder="New Profile Name" style="margin-bottom: 0" />
-				<button id="saveProfileBtn" class="btn-primary" style="white-space: nowrap">Save As</button>
-			</div>
-
-			<div class="row">
 				<select id="profileSelect" style="margin-bottom: 0">
 					<option value="">-- Saved Profiles --</option>
 				</select>
 				<button id="loadProfileBtn" class="btn-outline">Load</button>
 				<button id="deleteProfileBtn" class="btn-danger">Delete</button>
+			</div>
+
+			<div class="row">
+				<input type="text" id="profileName" placeholder="New Profile Name" style="margin-bottom: 0" />
+				<button id="saveProfileBtn" class="btn-primary" style="white-space: nowrap">Save</button>
 			</div>
 
 			<div class="row" style="margin-top: 12px">

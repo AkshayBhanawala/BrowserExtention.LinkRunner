@@ -28,7 +28,7 @@ async function stopSequence() {
 }
 
 async function executeNext() {
-	const data = await chrome.storage.local.get(['pendingUrls', 'isRunning']);
+	const data = await chrome.storage.local.get(['pendingUrls', 'isRunning', 'targetWindowId']);
 	if (!data.isRunning) return;
 
 	let urls = data.pendingUrls || [];
@@ -42,7 +42,21 @@ async function executeNext() {
 
 	updateBadge(urls.length + 1);
 
-	chrome.tabs.create({ url: nextUrl }, (tab) => {
+	// Setup the options for the new tab
+	let tabOptions = { url: nextUrl };
+
+	// Verify the original window still exists, then assign it
+	if (data.targetWindowId) {
+		try {
+			await chrome.windows.get(data.targetWindowId);
+			tabOptions.windowId = data.targetWindowId;
+		} catch (err) {
+			// Window was closed by the user; fallback to Chrome's default behavior
+		}
+	}
+
+	// Create the tab with the targeted window options
+	chrome.tabs.create(tabOptions, (tab) => {
 		currentTabId = tab.id;
 	});
 }
