@@ -1,43 +1,31 @@
 {
-  "manifest_version": 3,
-  "name": "Links To Destination",
-  "version": "1.0.0",
-  "description": "Execute a list of URLs sequentially, triggering the next URL based on destination rules.",
-  "permissions": [
-    "storage",
-    "tabs",
-    "scripting"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "action": {
-    "default_popup": "popup.html",
+	"manifest_version": 3,
+	"name": "Link Runner",
+	"version": "1.0.0",
+	"description": "Execute a list of URLs sequentially, triggering the next URL based on destination rules.",
+	"permissions": ["storage", "tabs", "scripting"],
+	"host_permissions": ["<all_urls>"],
+	"options_ui": {
+		"page": "popup.html",
+		"open_in_tab": true
+	},
+	"background": {
+		"service_worker": "background.js",
+		"scripts": ["background.js"]
+	},
+	"action": {
+		"default_popup": "popup.html",
 		"default_icon": {
-			"16": "assets/images/icon-16.png",
-			"32": "assets/images/icon-32.png",
-			"48": "assets/images/icon-48.png",
-			"128": "assets/images/icon-128.png",
-			"180": "assets/images/icon-180.png",
-			"192": "assets/images/icon-192.png",
-			"270": "assets/images/icon-270.png"
+			"16": "assets/images/icon.16.png",
+			"32": "assets/images/icon.32.png",
+			"48": "assets/images/icon.48.png",
+			"128": "assets/images/icon.128.png"
 		}
-  },
-  "options_ui": {
-    "page": "popup.html",
-    "open_in_tab": true
-  },
-  "background": {
-    "service_worker": "background.js",
-    "scripts": ["background.js"]
-  },
+	},
 	"icons": {
-		"16": "assets/images/icon-16.png",
-		"32": "assets/images/icon-32.png",
-		"48": "assets/images/icon-48.png",
-		"128": "assets/images/icon-128.png",
-		"180": "assets/images/icon-180.png",
-		"192": "assets/images/icon-192.png",
-		"270": "assets/images/icon-270.png"
+		"16": "assets/images/icon.16.png",
+		"32": "assets/images/icon.32.png",
+		"48": "assets/images/icon.48.png",
+		"128": "assets/images/icon.128.png"
 	}
 }

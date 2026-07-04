@@ -1,6 +1,5 @@
 let currentTabId = null;
 
-// Listen for commands from the Popup UI and the injected Content Scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	if (request.action === 'START') {
 		startSequence();
@@ -41,7 +40,6 @@ async function executeNext() {
 	const nextUrl = urls.shift();
 	await chrome.storage.local.set({ pendingUrls: urls });
 
-	// Total pending includes the one about to run
 	updateBadge(urls.length + 1);
 
 	chrome.tabs.create({ url: nextUrl }, (tab) => {
@@ -52,13 +50,12 @@ async function executeNext() {
 function updateBadge(count) {
 	if (count > 0) {
 		chrome.action.setBadgeText({ text: count.toString() });
-		chrome.action.setBadgeBackgroundColor({ color: '#1a73e8' });
+		chrome.action.setBadgeBackgroundColor({ color: '#0fe279' });
 	} else {
 		chrome.action.setBadgeText({ text: '' });
 	}
 }
 
-// Ensure the sequence stops if the active tab is closed by the user manually
 chrome.tabs.onRemoved.addListener(async (tabId) => {
 	const data = await chrome.storage.local.get(['isRunning']);
 	if (data.isRunning && tabId === currentTabId) {
@@ -66,52 +63,74 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 	}
 });
 
-// Detect when the spawned tab finishes loading a page (handles redirects and SPAs)
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-	const data = await chrome.storage.local.get(['isRunning', 'destUrl', 'destSelector']);
+	// We now retrieve conditionLogic from storage
+	const data = await chrome.storage.local.get(['isRunning', 'destUrl', 'destSelector', 'conditionLogic']);
 
 	if (data.isRunning && tabId === currentTabId && changeInfo.status === 'complete') {
-		injectConditionChecker(tabId, data.destUrl, data.destSelector);
+		// Fallback to 'AND' if for some reason the setting wasn't saved yet
+		const logic = data.conditionLogic || 'AND';
+		injectConditionChecker(tabId, data.destUrl, data.destSelector, logic);
 	}
 });
 
-function injectConditionChecker(tabId, destUrl, destSelector) {
-	// Only attempt injection if the URL is valid (avoids chrome:// URLs which throw errors)
+function injectConditionChecker(tabId, destUrl, destSelector, conditionLogic) {
 	chrome.tabs.get(tabId, (tab) => {
 		if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('about:')) {
 			chrome.scripting.executeScript({
 				target: { tabId: tabId },
 				func: runChecker,
-				args: [destUrl, destSelector]
+				// Pass conditionLogic as the third argument to the injected function
+				args: [destUrl, destSelector, conditionLogic]
 			}).catch(err => console.error("Injection failed:", err));
 		}
 	});
 }
 
 // --- THIS FUNCTION RUNS IN THE CONTEXT OF THE WEBPAGE ---
-function runChecker(destUrl, destSelector) {
-	// Clear any previously injected interval on this tab to avoid overlaps
+function runChecker(destUrl, destSelector, conditionLogic) {
 	if (window.extensionCheckerInterval) {
 		clearInterval(window.extensionCheckerInterval);
 	}
 
 	window.extensionCheckerInterval = setInterval(() => {
-		// If an input wasn't provided, it automatically counts as "met"
-		let urlMet = !destUrl;
-		let selectorMet = !destSelector;
+		const urlProvided = !!destUrl;
+		const selectorProvided = !!destSelector;
 
-		if (destUrl && window.location.href.includes(destUrl)) {
+		let urlMet = false;
+		let selectorMet = false;
+
+		if (urlProvided && window.location.href.includes(destUrl)) {
 			urlMet = true;
 		}
 
-		if (destSelector && document.querySelector(destSelector)) {
+		if (selectorProvided && document.querySelector(destSelector)) {
 			selectorMet = true;
 		}
 
-		// If both explicit and implicit conditions are met
-		if (urlMet && selectorMet) {
+		let isDone = false;
+
+		// If user didn't provide either condition, proceed immediately
+		if (!urlProvided && !selectorProvided) {
+			isDone = true;
+		} else if (conditionLogic === 'OR') {
+			// OR logic: true if AT LEAST ONE provided condition evaluates to true
+			if ((urlProvided && urlMet) || (selectorProvided && selectorMet)) {
+				isDone = true;
+			}
+		} else {
+			// AND logic: evaluate provided conditions. If not provided, treat as 'met'
+			const finalUrlCondition = !urlProvided || urlMet;
+			const finalSelectorCondition = !selectorProvided || selectorMet;
+
+			if (finalUrlCondition && finalSelectorCondition) {
+				isDone = true;
+			}
+		}
+
+		if (isDone) {
 			clearInterval(window.extensionCheckerInterval);
 			chrome.runtime.sendMessage({ action: "CONDITION_MET" });
 		}
-	}, 1000); // Polls every 1 second
+	}, 1000);
 }
