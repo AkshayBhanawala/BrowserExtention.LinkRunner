@@ -7,17 +7,17 @@
 			/* Dark Mode (Default) */
 			:root,
 			:root[data-theme='dark'] {
-					--bg-primary: #202124;
-					--text-primary: #e8eaed;
-					--bg-secondary: #292a2d;
-					--border-main: #3c4043;
-					--border-input: #5f6368;
-					--text-muted: #9aa0a6;
-					--btn-outline-bg: #303134;
-					--btn-outline-hover: #434446;
-					--btn-disabled-bg: #3c4043;
-					--btn-disabled-text: #5f6368;
-					--url-count-bg: rgba(26, 115, 232, 0.2);
+				--bg-primary: #202124;
+				--text-primary: #e8eaed;
+				--bg-secondary: #292a2d;
+				--border-main: #3c4043;
+				--border-input: #5f6368;
+				--text-muted: #9aa0a6;
+				--btn-outline-bg: #303134;
+				--btn-outline-hover: #434446;
+				--btn-disabled-bg: #3c4043;
+				--btn-disabled-text: #5f6368;
+				--url-count-bg: rgba(26, 115, 232, 0.2);
 			}
 
 			/* Light Mode (Explicitly set to 'light') */
@@ -38,24 +38,31 @@
 			/* Light Mode (System setting) */
 			@media (prefers-color-scheme: light) {
 				:root:not([data-theme='dark']) {
-				--bg-primary: #ffffff;
-				--text-primary: #333333;
-				--bg-secondary: #f5f7f9;
-				--border-main: #e1e4e8;
-				--border-input: #cccccc;
-				--text-muted: #666666;
-				--btn-outline-bg: #ffffff;
-				--btn-outline-hover: #e9e9e9;
-				--btn-disabled-bg: #e0e0e0;
-				--btn-disabled-text: #9e9e9e;
-				--url-count-bg: #e8f0fe;
+					--bg-primary: #ffffff;
+					--text-primary: #333333;
+					--bg-secondary: #f5f7f9;
+					--border-main: #e1e4e8;
+					--border-input: #cccccc;
+					--text-muted: #666666;
+					--btn-outline-bg: #ffffff;
+					--btn-outline-hover: #e9e9e9;
+					--btn-disabled-bg: #e0e0e0;
+					--btn-disabled-text: #9e9e9e;
+					--url-count-bg: #e8f0fe;
 				}
+			}
+
+			html {
+				display: flex;
+				justify-content: center;
 			}
 
 			/* --- BASE STYLES --- */
 			body {
+				flex-grow: 1;
 				font-family: system-ui, sans-serif;
 				min-width: 400px;
+				max-width: 700px;
 				padding: 16px;
 				padding-top: 0;
 				margin: 0;
