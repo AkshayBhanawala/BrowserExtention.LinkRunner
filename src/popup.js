@@ -12,8 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const destUrlEl = document.getElementById('destUrl');
 	const destSelectorEl = document.getElementById('destSelector');
 	const conditionLogicEl = document.getElementById('conditionLogic');
+
+	// Link Collector Elements
 	const tabMatchEl = document.getElementById('tabMatch');
 	const anchorSelectorEl = document.getElementById('anchorSelector');
+	const copyToClipboardEl = document.getElementById('copyToClipboard');
+	const appendToRunnerEl = document.getElementById('appendToRunner');
 
 	// UI Interaction Elements
 	const urlCountEl = document.getElementById('urlCount');
@@ -35,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// 1. Initialize & Restore state
 	const data = await chrome.storage.local.get([
 		'urlList', 'destUrl', 'destSelector', 'conditionLogic', 'tabMatch',
-		'anchorSelector', 'isRunning', 'savedProfiles', 'uiTheme'
+		'anchorSelector', 'copyToClipboard', 'appendToRunner', 'isRunning', 'savedProfiles', 'uiTheme'
 	]);
 
 	// Setup Theme
@@ -48,6 +52,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 	if (data.conditionLogic) conditionLogicEl.value = data.conditionLogic;
 	if (data.tabMatch) tabMatchEl.value = data.tabMatch;
 	if (data.anchorSelector) anchorSelectorEl.value = data.anchorSelector;
+
+	// Checkboxes (Default to append = true, copy = false if never set)
+	copyToClipboardEl.checked = data.copyToClipboard !== undefined ? data.copyToClipboard : false;
+	appendToRunnerEl.checked = data.appendToRunner !== undefined ? data.appendToRunner : true;
 
 	let savedProfiles = data.savedProfiles || {};
 	refreshProfileDropdown(savedProfiles);
@@ -90,7 +98,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 			destSelector: destSelectorEl.value.trim(),
 			conditionLogic: conditionLogicEl.value,
 			tabMatch: tabMatchEl.value.trim(),
-			anchorSelector: anchorSelectorEl.value.trim()
+			anchorSelector: anchorSelectorEl.value.trim(),
+			copyToClipboard: copyToClipboardEl.checked,
+			appendToRunner: appendToRunnerEl.checked
 		};
 	}
 
@@ -100,6 +110,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 		if (config.conditionLogic !== undefined) conditionLogicEl.value = config.conditionLogic;
 		if (config.tabMatch !== undefined) tabMatchEl.value = config.tabMatch;
 		if (config.anchorSelector !== undefined) anchorSelectorEl.value = config.anchorSelector;
+		if (config.copyToClipboard !== undefined) copyToClipboardEl.checked = config.copyToClipboard;
+		else copyToClipboardEl.checked = false;
+		if (config.appendToRunner !== undefined) appendToRunnerEl.checked = config.appendToRunner;
+		else appendToRunnerEl.checked = false;
 
 		saveActiveState();
 		checkActiveProfileMatch();
@@ -117,26 +131,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 		});
 	}
 
-	// Evaluates current inputs against all saved profiles and updates the dropdown
 	function checkActiveProfileMatch() {
 		const current = getSettingsObject();
 		let matchedName = "";
 
 		for (const [name, profile] of Object.entries(savedProfiles)) {
-			// Adding defaults (|| "") ensures backwards compatibility with older exports
 			if (
 				(profile.destUrl || "") === current.destUrl &&
 				(profile.destSelector || "") === current.destSelector &&
 				(profile.conditionLogic || "AND") === current.conditionLogic &&
 				(profile.tabMatch || "") === current.tabMatch &&
-				(profile.anchorSelector || "") === current.anchorSelector
+				(profile.anchorSelector || "") === current.anchorSelector &&
+				(!!profile.copyToClipboard) === current.copyToClipboard &&
+				(!!profile.appendToRunner) === current.appendToRunner
 			) {
 				matchedName = name;
-				break; // Stop at the first exact match
+				break;
 			}
 		}
-
-		// This will either select the matched profile name, or "" (-- Saved Profiles --)
 		profileSelectEl.value = matchedName;
 		profileNameEl.value = matchedName;
 	}
@@ -171,9 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	loadProfileBtn.addEventListener('click', () => {
 		const name = profileSelectEl.value;
 		if (!name || !savedProfiles[name]) return;
-
 		applySettingsObject(savedProfiles[name]);
-
 		loadProfileBtn.textContent = "Loaded!";
 		setTimeout(() => loadProfileBtn.textContent = "Load", 1500);
 	});
@@ -193,14 +203,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// --- EXPORT & IMPORT LOGIC ---
 
 	exportBtn.addEventListener('click', () => {
-		const exportData = {
-			activeSettings: getSettingsObject(),
-			savedProfiles: savedProfiles
-		};
-
+		const exportData = { activeSettings: getSettingsObject(), savedProfiles: savedProfiles };
 		const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
 		const url = URL.createObjectURL(blob);
-
 		const a = document.createElement('a');
 		a.href = url;
 		a.download = "LinkRunner.settings.json";
@@ -216,7 +221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 		reader.onload = async (event) => {
 			try {
 				const parsedData = JSON.parse(event.target.result);
-
 				if (parsedData.activeSettings !== undefined) {
 					applySettingsObject(parsedData.activeSettings);
 					if (parsedData.savedProfiles) {
@@ -228,7 +232,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 				} else {
 					applySettingsObject(parsedData);
 				}
-
 				importLabelEl.textContent = "Imported!";
 				setTimeout(() => importLabelEl.textContent = "Import JSON", 2000);
 			} catch (err) {
@@ -244,9 +247,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 	collectBtn.addEventListener('click', async () => {
 		const matchStr = tabMatchEl.value.trim();
 		const selectorStr = anchorSelectorEl.value.trim();
+		const shouldCopy = copyToClipboardEl.checked;
+		const shouldAppend = appendToRunnerEl.checked;
 
 		if (!matchStr || !selectorStr) {
 			return showCollectStatus("Inputs required!", "#f44336");
+		}
+		if (!shouldCopy && !shouldAppend) {
+			return showCollectStatus("Select at least one action (Copy or Append)", "#f44336");
 		}
 
 		collectBtn.disabled = true;
@@ -272,11 +280,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 		}
 
 		if (foundLinks.length > 0) {
-			const existingUrls = urlListEl.value.split('\n').map(u => u.trim()).filter(u => u.length > 0);
-			urlListEl.value = Array.from(new Set([...existingUrls, ...foundLinks])).join('\n');
-			updateUrlCount();
+			const uniqueFoundLinks = Array.from(new Set(foundLinks));
+			let statusText = `Found ${uniqueFoundLinks.length} link(s)!`;
+
+			if (shouldCopy) {
+				try {
+					await navigator.clipboard.writeText(uniqueFoundLinks.join('\n'));
+					statusText += " Copied.";
+				} catch (err) {
+					console.error("Failed to copy to clipboard", err);
+					statusText += " (Copy Failed)";
+				}
+			}
+
+			if (shouldAppend) {
+				const existingUrls = urlListEl.value.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+				urlListEl.value = Array.from(new Set([...existingUrls, ...uniqueFoundLinks])).join('\n');
+				updateUrlCount();
+				statusText += " Appended.";
+			}
+
 			saveActiveState();
-			showCollectStatus(`Added ${foundLinks.length} links!`, "#1a73e8");
+			showCollectStatus(statusText, "#1a73e8");
 		} else {
 			showCollectStatus("No links found.", "#f44336");
 		}
@@ -289,18 +314,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 		collectStatus.textContent = text;
 		collectStatus.style.color = color;
 		collectStatus.style.opacity = '1';
-		setTimeout(() => { collectStatus.style.opacity = '0'; }, 2500);
+		setTimeout(() => { collectStatus.style.opacity = '0'; }, 3000);
 	}
 
 	// --- CORE RUNNER & EVENT LISTENERS ---
 
-	// The URL list shouldn't trigger a profile check because links aren't part of profiles
 	urlListEl.addEventListener('input', () => {
 		updateUrlCount();
 		saveActiveState();
 	});
 
-	// These settings actively evaluate the profile dropdown state
 	[destUrlEl, destSelectorEl, tabMatchEl, anchorSelectorEl].forEach(el => {
 		el.addEventListener('input', () => {
 			saveActiveState();
@@ -308,16 +331,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 		});
 	});
 
-	conditionLogicEl.addEventListener('change', () => {
-		saveActiveState();
-		checkActiveProfileMatch();
+	[conditionLogicEl, copyToClipboardEl, appendToRunnerEl].forEach(el => {
+		el.addEventListener('change', () => {
+			saveActiveState();
+			checkActiveProfileMatch();
+		});
 	});
 
 	startBtn.addEventListener('click', async () => {
 		await saveActiveState();
 		updateButtons(true);
 
-		// Capture the exact window where the extension was started
 		const currentWindow = await chrome.windows.getCurrent();
 		await chrome.storage.local.set({ targetWindowId: currentWindow.id });
 
@@ -342,6 +366,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 		conditionLogicEl.disabled = isRunning;
 		tabMatchEl.disabled = isRunning;
 		anchorSelectorEl.disabled = isRunning;
+		copyToClipboardEl.disabled = isRunning;
+		appendToRunnerEl.disabled = isRunning;
 		collectBtn.disabled = isRunning;
 
 		saveProfileBtn.disabled = isRunning;
@@ -349,10 +375,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		deleteProfileBtn.disabled = isRunning;
 		exportBtn.disabled = isRunning;
 
-		if (isRunning) {
-			importLabelEl.classList.add('disabled');
-		} else {
-			importLabelEl.classList.remove('disabled');
-		}
+		if (isRunning) importLabelEl.classList.add('disabled');
+		else importLabelEl.classList.remove('disabled');
 	}
 });

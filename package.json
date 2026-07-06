@@ -1,7 +1,7 @@
 {
 	"name": "link-runner",
 	"description": "Execute a list of URLs sequentially, triggering the next URL based on destination rules.",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"type": "module",
 	"scripts": {
 		"clean": "shx rm -rf dist build",

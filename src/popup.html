@@ -197,6 +197,32 @@
 				align-items: stretch;
 			}
 
+			/* Checkbox Styles */
+			.checkbox-group {
+				margin-bottom: 12px;
+				background: var(--bg-primary);
+				padding: 8px;
+				border-radius: 4px;
+				border: 1px solid var(--border-input);
+			}
+			.checkbox-group label {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				font-weight: 500;
+				font-size: 12px;
+				margin-bottom: 4px;
+				cursor: pointer;
+			}
+			.checkbox-group label:last-child {
+				margin-bottom: 0;
+			}
+			.checkbox-group input[type='checkbox'] {
+				width: auto;
+				margin: 0;
+				cursor: pointer;
+			}
+
 			/* --- BUTTONS --- */
 			button,
 			.btn-label {
@@ -303,6 +329,11 @@
 
 			<label>Anchor Tag Selector:</label>
 			<input type="text" id="anchorSelector" placeholder="e.g. a.next-page-link" />
+
+			<div class="checkbox-group">
+				<label><input type="checkbox" id="copyToClipboard" /> Copy collected links to Clipboard</label>
+				<label><input type="checkbox" id="appendToRunner" /> Append links to Link Runner</label>
+			</div>
 
 			<button id="collectBtn" class="btn-primary" style="width: 100%">Collect Links from Tabs</button>
 			<div id="collectStatus" class="status-text" style="margin-top: 6px"></div>
