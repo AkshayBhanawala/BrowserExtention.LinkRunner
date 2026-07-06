@@ -43,7 +43,7 @@ jobs:
 
       - name: Archive extension
         working-directory: dist
-        run: zip -r "../LinkRunner.v${{ steps.versions.outputs.ext_version }}.zip" .
+        run: zip -r "LinkRunner.v${{ steps.versions.outputs.ext_version }}.zip" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
