@@ -18,13 +18,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const anchorSelectorEl = document.getElementById('anchorSelector');
 	const copyToClipboardEl = document.getElementById('copyToClipboard');
 	const appendToRunnerEl = document.getElementById('appendToRunner');
-
-	// UI Interaction Elements
+	const collectStatus = document.getElementById('collectStatus');
 	const urlCountEl = document.getElementById('urlCount');
 	const startBtn = document.getElementById('startBtn');
 	const stopBtn = document.getElementById('stopBtn');
 	const collectBtn = document.getElementById('collectBtn');
-	const collectStatus = document.getElementById('collectStatus');
 
 	// Profile & Export Elements
 	const profileNameEl = document.getElementById('profileName');
@@ -33,8 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const loadProfileBtn = document.getElementById('loadProfileBtn');
 	const deleteProfileBtn = document.getElementById('deleteProfileBtn');
 	const exportBtn = document.getElementById('exportBtn');
+	const importBtn = document.getElementById('importBtn');
 	const importFileEl = document.getElementById('importFile');
-	const importLabelEl = document.getElementById('importLabel');
 
 	// 1. Initialize & Restore state
 	const data = await chrome.storage.local.get([
@@ -213,6 +211,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 		URL.revokeObjectURL(url);
 	});
 
+	importBtn.addEventListener('click', () => {
+		const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+
+		if (isFirefox) {
+			chrome.tabs.getCurrent((tab) => {
+				if (tab) {
+					importFileEl.click();
+				} else {
+					chrome.runtime.openOptionsPage();
+					window.close();
+				}
+			});
+		} else {
+			importFileEl.click();
+		}
+	});
+
 	importFileEl.addEventListener('change', (e) => {
 		const file = e.target.files[0];
 		if (!file) return;
@@ -232,8 +247,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 				} else {
 					applySettingsObject(parsedData);
 				}
-				importLabelEl.textContent = "Imported!";
-				setTimeout(() => importLabelEl.textContent = "Import JSON", 2000);
+				importBtn.textContent = "Imported!";
+				setTimeout(() => importBtn.textContent = "Import JSON", 2000);
 			} catch (err) {
 				alert("Invalid JSON file. Cannot import.");
 			}
@@ -374,8 +389,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 		loadProfileBtn.disabled = isRunning;
 		deleteProfileBtn.disabled = isRunning;
 		exportBtn.disabled = isRunning;
-
-		if (isRunning) importLabelEl.classList.add('disabled');
-		else importLabelEl.classList.remove('disabled');
+		importBtn.disabled = isRunning;
 	}
 });
