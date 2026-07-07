@@ -181,6 +181,7 @@
 			textarea::placeholder,
 			input[type='text']::placeholder {
 				color: var(--text-muted);
+				white-space: pre;
 			}
 			.hint {
 				font-size: 11px;
@@ -331,6 +332,7 @@
 			<input type="text" id="anchorSelector" placeholder="e.g. a.next-page-link" />
 
 			<div class="checkbox-group">
+				<label><input type="checkbox" id="fallbackToTabUrl"> Fallback to Tab URL if anchor is missing</label>
 				<label><input type="checkbox" id="copyToClipboard" /> Copy collected links to Clipboard</label>
 				<label><input type="checkbox" id="appendToRunner" /> Append links to Link Runner</label>
 			</div>

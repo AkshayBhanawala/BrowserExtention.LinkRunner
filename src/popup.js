@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// Link Collector Elements
 	const tabMatchEl = document.getElementById('tabMatch');
 	const anchorSelectorEl = document.getElementById('anchorSelector');
+	const fallbackToTabUrlEl = document.getElementById('fallbackToTabUrl'); // <-- ADD THIS
 	const copyToClipboardEl = document.getElementById('copyToClipboard');
 	const appendToRunnerEl = document.getElementById('appendToRunner');
 	const collectStatus = document.getElementById('collectStatus');
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// 1. Initialize & Restore state
 	const data = await chrome.storage.local.get([
 		'urlList', 'destUrl', 'destSelector', 'conditionLogic', 'tabMatch',
-		'anchorSelector', 'copyToClipboard', 'appendToRunner', 'isRunning', 'savedProfiles', 'uiTheme'
+		'anchorSelector', 'fallbackToTabUrl', 'copyToClipboard', 'appendToRunner', 'isRunning', 'savedProfiles', 'uiTheme'
 	]);
 
 	// Setup Theme
@@ -51,7 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	if (data.tabMatch) tabMatchEl.value = data.tabMatch;
 	if (data.anchorSelector) anchorSelectorEl.value = data.anchorSelector;
 
-	// Checkboxes (Default to append = true, copy = false if never set)
+	// Checkboxes
+	fallbackToTabUrlEl.checked = data.fallbackToTabUrl !== undefined ? data.fallbackToTabUrl : false;
 	copyToClipboardEl.checked = data.copyToClipboard !== undefined ? data.copyToClipboard : false;
 	appendToRunnerEl.checked = data.appendToRunner !== undefined ? data.appendToRunner : true;
 
@@ -97,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			conditionLogic: conditionLogicEl.value,
 			tabMatch: tabMatchEl.value.trim(),
 			anchorSelector: anchorSelectorEl.value.trim(),
+			fallbackToTabUrl: fallbackToTabUrlEl.checked,
 			copyToClipboard: copyToClipboardEl.checked,
 			appendToRunner: appendToRunnerEl.checked
 		};
@@ -108,6 +111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 		if (config.conditionLogic !== undefined) conditionLogicEl.value = config.conditionLogic;
 		if (config.tabMatch !== undefined) tabMatchEl.value = config.tabMatch;
 		if (config.anchorSelector !== undefined) anchorSelectorEl.value = config.anchorSelector;
+		if (config.fallbackToTabUrl !== undefined) fallbackToTabUrlEl.checked = config.copyToClipboard;
+		else fallbackToTabUrlEl.checked = false;
 		if (config.copyToClipboard !== undefined) copyToClipboardEl.checked = config.copyToClipboard;
 		else copyToClipboardEl.checked = false;
 		if (config.appendToRunner !== undefined) appendToRunnerEl.checked = config.appendToRunner;
@@ -140,6 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 				(profile.conditionLogic || "AND") === current.conditionLogic &&
 				(profile.tabMatch || "") === current.tabMatch &&
 				(profile.anchorSelector || "") === current.anchorSelector &&
+				(!!profile.fallbackToTabUrl) === current.fallbackToTabUrl &&
 				(!!profile.copyToClipboard) === current.copyToClipboard &&
 				(!!profile.appendToRunner) === current.appendToRunner
 			) {
@@ -262,6 +268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	collectBtn.addEventListener('click', async () => {
 		const matchStr = tabMatchEl.value.trim();
 		const selectorStr = anchorSelectorEl.value.trim();
+		const shouldFallback = fallbackToTabUrlEl.checked;
 		const shouldCopy = copyToClipboardEl.checked;
 		const shouldAppend = appendToRunnerEl.checked;
 
@@ -290,7 +297,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 					},
 					args: [selectorStr]
 				});
-				if (results && results[0] && results[0].result) foundLinks.push(results[0].result);
+				if (results && results[0] && results[0].result) {
+					foundLinks.push(results[0].result);
+				} else if (shouldFallback) {
+					foundLinks.push(tab.url);
+				}
 			} catch (err) { /* ignore */ }
 		}
 
@@ -346,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		});
 	});
 
-	[conditionLogicEl, copyToClipboardEl, appendToRunnerEl].forEach(el => {
+	[conditionLogicEl, fallbackToTabUrlEl, copyToClipboardEl, appendToRunnerEl].forEach(el => {
 		el.addEventListener('change', () => {
 			saveActiveState();
 			checkActiveProfileMatch();
@@ -381,6 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		conditionLogicEl.disabled = isRunning;
 		tabMatchEl.disabled = isRunning;
 		anchorSelectorEl.disabled = isRunning;
+		fallbackToTabUrlEl.disabled = isRunning;
 		copyToClipboardEl.disabled = isRunning;
 		appendToRunnerEl.disabled = isRunning;
 		collectBtn.disabled = isRunning;
