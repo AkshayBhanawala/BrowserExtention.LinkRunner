@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		if (config.conditionLogic !== undefined) conditionLogicEl.value = config.conditionLogic;
 		if (config.tabMatch !== undefined) tabMatchEl.value = config.tabMatch;
 		if (config.anchorSelector !== undefined) anchorSelectorEl.value = config.anchorSelector;
-		if (config.fallbackToTabUrl !== undefined) fallbackToTabUrlEl.checked = config.copyToClipboard;
+		if (config.fallbackToTabUrl !== undefined) fallbackToTabUrlEl.checked = config.fallbackToTabUrl;
 		else fallbackToTabUrlEl.checked = false;
 		if (config.copyToClipboard !== undefined) copyToClipboardEl.checked = config.copyToClipboard;
 		else copyToClipboardEl.checked = false;
